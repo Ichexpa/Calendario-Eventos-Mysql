@@ -5,10 +5,15 @@ class ConexionDB:
         self.config = {'user': 'root',
                   'password': 'Mauroo42446109*',
                   'host': 'localhost',
-                  'database': base_de_datos}
-        self.conexion = mysql.connector.connect(**self.config);
-        self.cursor= self.conexion.cursor();    
+                  'database': base_de_datos}   
+    def conectarse(self):
+        self.conexion = mysql.connector.connect(**self.config)
+        self.cursor = self.conexion.cursor()
     def cerrar_conexion(self):
         self.conexion.close();    
     def ejecutar_consulta(self,consulta,parametros=None):
         self.cursor.execute(consulta,parametros);
+    def obtener_registros(self):
+        return self.cursor.fetchall()
+    def obtener_registro(self):
+        return self.cursor.fetchone()

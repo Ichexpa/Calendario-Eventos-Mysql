@@ -82,5 +82,11 @@ class AdministradorDeFechas:
         if(int(parteMinuto)<10):
             parteMinuto="0"+parteMinuto;
         return f'{parteHora}:{parteMinuto}';
+    
     def horaYMinutoSeparados(horaString):
         return horaString[:2], horaString[3:]
+
+    def separar_fecha_hora(fechaHoraDt):
+        fecha = fechaHoraDt.date().strftime("%d-%m-%Y")
+        hora = AdministradorDeFechas.agregarCeroAHoraMinuto(fechaHoraDt.time())
+        return fecha, hora

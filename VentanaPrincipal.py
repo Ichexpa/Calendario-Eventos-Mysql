@@ -5,11 +5,12 @@ from TablaDeEventos import TablaDeEventos;
 
 class VentanaPrincipal(tk.Frame):
     fuenteBotones = ("consolas", 14, "bold");
-    def __init__(self,padre,manejadorJSon):
+    def __init__(self,padre,manejadorJSon,conexionDB):
         super().__init__(padre);
         self.padre=padre;
         self.manejadorJson=manejadorJSon;
-        self.tablaDeEventos=TablaDeEventos(self,self.manejadorJson);
+        self.conexionDB=conexionDB
+        self.tablaDeEventos=TablaDeEventos(self,self.manejadorJson,self.conexionDB);
         self.tablaDeEventos.grid(row=1,column=1);
         self.componenteEvento = ComponenteEvento(self, self.tablaDeEventos,self.manejadorJson);
         self.componenteEvento.grid(row=1, column=0);

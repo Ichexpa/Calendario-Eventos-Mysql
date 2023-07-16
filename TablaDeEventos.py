@@ -3,7 +3,8 @@ from tkinter import ttk,messagebox;
 from VentanaDetalleEvento import VentanaDetalleEvento
 from AdministradorDeFechas import AdministradorDeFechas
 from datetime import datetime
-
+from EventosModelo import EventosModelo
+from EventosYEtiquetasModel import EventosYEtiquetasModelos
 class TablaDeEventos(tk.Frame):
     colorDeFondo = "#BFDFB2"
     fuenteTextos = "consolas 14 bold"
@@ -12,10 +13,12 @@ class TablaDeEventos(tk.Frame):
     colorBotones = "#62CFA4"
     colorBotonesExploradoresDeFecha = "#086A52";
 
-    def __init__(self,padre,manejadorJson):
+    def __init__(self,padre,manejadorJson,conexionDB):
         super().__init__(padre);
         self.contadorSiguienteSemana=7;
         self.padre=padre;
+        self.conexionDB=conexionDB;
+        self.evento_modelo=EventosModelo();
         self.administradorDeFecha=AdministradorDeFechas();
         self.administradorDeFecha.getMesActual(datetime.now().date())
         self.accesorAlFicheroJson = manejadorJson;
@@ -69,20 +72,21 @@ class TablaDeEventos(tk.Frame):
         self.comboOpcionesDeFiltro.grid(row=0,column=2,columnspan=2,sticky="we",pady=15);
         
         self.tabla = ttk.Treeview(self.contenedorTabla,
-                                  columns=("Titulo", "Fecha", "Hora",
+                                  columns=("ID","Titulo", "Fecha", "Hora",
                                            "Duracion", "Descripcion", "Importante"), style="mystyle.Treeview")
         
         #Defino las columnas
         self.tabla.column("#0", width=0)
+        self.tabla.column('ID', width=20,anchor="center")
         self.tabla.column("Titulo", width=200, anchor="center")
-        self.tabla.column("Fecha", width=100, anchor="center")
+        self.tabla.column("Fecha", width=90, anchor="center")
         self.tabla.column("Hora", width=50, anchor="center")
         self.tabla.column("Duracion", width=100, anchor="center")
         self.tabla.column("Descripcion", width=110, anchor="center")
-        self.tabla.column("Importante", width=120, anchor="center")
-
-        #Defino las cabeceras
+        self.tabla.column("Importante", width=130, anchor="center")        
+        #Defino las cabeceras        
         self.tabla.heading("#0", text="")
+        self.tabla.heading('ID', text='ID',anchor='center')
         self.tabla.heading("Titulo", text="Titulo", anchor="center")
         self.tabla.heading("Fecha", text="Fecha", anchor="center")
         self.tabla.heading("Hora", text="Hora", anchor="center")
@@ -109,9 +113,9 @@ class TablaDeEventos(tk.Frame):
     
     def mostrarDetalleEventoSeleccionado(self, e):        
         seleccionado=self.tabla.focus();
-        valor = self.tabla.item(seleccionado,"value") ;
-        eventoCompleto=self.accesorAlFicheroJson.encontrarObjeto(valor)[1];
-        VentanaDetalleEvento(self.padre, eventoCompleto)
+        valor = self.tabla.item(seleccionado,"value");
+        evento_seleccionado = EventosYEtiquetasModelos().get_evento_y_etiqueta(self.conexionDB, valor[0])
+        VentanaDetalleEvento(self.padre, evento_seleccionado)
 
     def agregarEventoATabla(self,evento):
         #Se guarda el evento formateado al json que a su vez lo guarda en la lista de la clase
@@ -146,38 +150,42 @@ class TablaDeEventos(tk.Frame):
         self.tabla.insert("", tk.END, values=tuplaNuevoEvento,tags=self.colorFilaImportante(evento.importancia));
         self.agregarFechaOrdenada();
         
-    
-    def cargarTablaOrdenada(self,lista):
-        lista = sorted(lista,key=lambda elemento:
-                                           AdministradorDeFechas.unirFechaYHoraCadenasEnDatetime(elemento["fecha"], elemento["hora"]))
+    def incializar_tabla(self):
+        print("Carga la tabla de eventos")
+        lista_eventos = self.evento_modelo.get_eventos(self.conexionDB)
+        self.cargarTabla(lista_eventos)
+
+    def cargarTabla(self,lista):        
         for evento in lista:
-            self.tabla.insert("", tk.END, values=(evento["titulo"],
-                                                      evento["fecha"],
-                                                      evento["hora"],
-                                                      evento["duracion"],
-                                                      evento["descripcion"],
-                                                      self.esImportante(evento["importancia"])),
-                                                      tags=self.colorFilaImportante(evento["importancia"]));
+            fecha,hora=AdministradorDeFechas.separar_fecha_hora(evento[2])
+            self.tabla.insert("", tk.END, values=(evento[0],
+                                                   evento[1],
+                                                      fecha,
+                                                      hora,
+                                                      evento[3],
+                                                      evento[4],
+                                                      self.esImportante(evento[5])),
+                                                      tags=self.colorFilaImportante(evento[5]));
 
     def cargarTablaPorSemana(self):
         self.eliminarFilas();        
-        listaDeEventosPrimeraSemana = self.accesorAlFicheroJson.obtenerPrimerosSieteDias(self.contadorSiguienteSemana);
-        self.cargarTablaOrdenada(listaDeEventosPrimeraSemana);
+        listaDeEventosPrimeraSemana=self.evento_modelo.get_eventos_semanales(self.conexionDB,self.contadorSiguienteSemana)
+        self.cargarTabla(listaDeEventosPrimeraSemana);
 
     def cargarRegistrosDelMesEnTabla(self):
         self.eliminarFilas()
         listaDeEventosDentroDelMes = self.accesorAlFicheroJson.obtenerMes(self.administradorDeFecha.fechaPrimerDia,
                                                                           self.administradorDeFecha.fechaUltimoDia);
-        self.cargarTablaOrdenada(listaDeEventosDentroDelMes);
+        self.cargarTabla(listaDeEventosDentroDelMes);
             
     def esImportante(self,valor):
-        if (valor):
+        if (valor==1):
             esImportante = "Si"
         else:
             esImportante="No"
         return esImportante;
     def colorFilaImportante(self,valor):
-        if (valor):
+        if (valor==1):
             return "importante"
         else:
             return "sinImportancia"
@@ -257,10 +265,10 @@ class TablaDeEventos(tk.Frame):
 
     def buscarEvento(self):
         valorDelInput = self.ingresobuscarEvento.get();
-        listaDeCoincidencias = self.accesorAlFicheroJson.encontrarEventoPorPalabraClaveOTitulo(valorDelInput);
+        listaDeCoincidencias = EventosYEtiquetasModelos().get_eventos_por_etiqueta(self.conexionDB,valorDelInput);
         if(len(listaDeCoincidencias)>0):
             self.eliminarFilas();
-            self.cargarTablaOrdenada(listaDeCoincidencias);
+            self.cargarTabla(listaDeCoincidencias);
         else:
             messagebox.showinfo("Sin coincidencias",
                                 "No se encontraron eventos que coincidan con " + valorDelInput);
