@@ -119,20 +119,22 @@ class TablaDeEventos(tk.Frame):
 
     def agregarEventoATabla(self,evento):
         #Se guarda el evento formateado al json que a su vez lo guarda en la lista de la clase
-        noSeEncuentraRepetido=self.accesorAlFicheroJson.agregarObjetoAFichero(evento.getEventoComoDict());
-        if (noSeEncuentraRepetido):
-            fechaTipoDate = AdministradorDeFechas.cadenaDeFechaADate(evento.fecha)
-            seEncuentraEnLaSemana = self.administradorDeFecha.seEncuentraEnLaSemana(fechaTipoDate,  # Retorna un booleano
+        carga_exitosa= EventosYEtiquetasModelos().ingresar_eventos_por_etiqueta(self.conexionDB,evento)
+        if (carga_exitosa):
+            print("Se cargo con exito")
+            fechaTipoDate = AdministradorDeFechas.cadenaDeFechaADate(evento.fecha,evento.hora)
+            seEncuentraEnLaSemana = self.administradorDeFecha.seEncuentraEnLaSemana(fechaTipoDate.date(),  # Retorna un booleano
                                                                             self.contadorSiguienteSemana)
-            seEncuentraEnElMes = AdministradorDeFechas.comprobarSiSeEncuentraEnElMesActual(fechaTipoDate,
+            seEncuentraEnElMes = AdministradorDeFechas.comprobarSiSeEncuentraEnElMesActual(fechaTipoDate.date(),
                                                                                        self.administradorDeFecha.fechaPrimerDia,
                                                                                        self.administradorDeFecha.fechaUltimoDia)
-            #Si esta en mes y se encuentra en los intervalos del mes se agrega a la tabla
+            #Ver mas tarde
+            """ #Si esta en mes y se encuentra en los intervalos del mes se agrega a la tabla
             if (self.comboOpcionesDeFiltro.get() == "Filtrar por Mes" and seEncuentraEnElMes):
                 self.agregarEventoOrdenado(evento);
             #Si esta en la semana y se encuentra entre los intervalos de la semana se agrega a la tabla
             elif (self.comboOpcionesDeFiltro.get() == "Filtrar por Semana" and seEncuentraEnLaSemana):
-                self.agregarEventoOrdenado(evento);
+                self.agregarEventoOrdenado(evento); """
 
             messagebox.showinfo("Evento agregado", "Evento agregado con exito");
         else:
@@ -148,13 +150,10 @@ class TablaDeEventos(tk.Frame):
                             evento.descripcion,
                             self.esImportante(evento.importancia))
         self.tabla.insert("", tk.END, values=tuplaNuevoEvento,tags=self.colorFilaImportante(evento.importancia));
-        self.agregarFechaOrdenada();
+        #Configurarlo mas tarde
+        #self.agregarFechaOrdenada();
         
-    def incializar_tabla(self):
-        print("Carga la tabla de eventos")
-        lista_eventos = self.evento_modelo.get_eventos(self.conexionDB)
-        self.cargarTabla(lista_eventos)
-
+    
     def cargarTabla(self,lista):        
         for evento in lista:
             fecha,hora=AdministradorDeFechas.separar_fecha_hora(evento[2])

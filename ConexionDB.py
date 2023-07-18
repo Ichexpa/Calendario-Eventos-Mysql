@@ -5,7 +5,7 @@ class ConexionDB:
         self.config = {'user': 'root',
                   'password': 'Mauroo42446109*',
                   'host': 'localhost',
-                  'database': base_de_datos}   
+                  'database': base_de_datos}
     def conectarse(self):
         self.conexion = mysql.connector.connect(**self.config)
         self.cursor = self.conexion.cursor()
@@ -17,3 +17,7 @@ class ConexionDB:
         return self.cursor.fetchall()
     def obtener_registro(self):
         return self.cursor.fetchone()
+    def aplicar_cambios(self):
+        self.conexion.commit();
+    def obtener_id_registro_creado(self):
+        return self.cursor.lastrowid

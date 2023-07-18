@@ -1,4 +1,6 @@
 import mysql.connector
+from EventosModelo import EventosModelo;
+from EtiquetasModelo import EtiquetasModelo;
 class EventosYEtiquetasModelos:
     def __init__(self):
         pass
@@ -34,3 +36,80 @@ class EventosYEtiquetasModelos:
             conexionDB.cerrar_conexion()
         return registros
 
+    def ingresar_eventos_por_etiqueta(self,conexionDB,evento):
+        try:
+            evento_modelo=EventosModelo()
+            etiqueta_modelo=EtiquetasModelo()
+            consulta = """INSERT INTO etiquetas_eventos(id_eventos,id_etiquetas)
+                            VALUES(%s,%s)"""
+            id_evento_creado=evento_modelo.crear_evento(conexionDB,evento);
+            etiquetas_de_evento = evento.identificadorEvento.split(",");
+            print(etiquetas_de_evento)
+            for etiqueta in etiquetas_de_evento:
+                etiqueta_sin_espacios=etiqueta.strip();
+                print(etiqueta_sin_espacios)
+                id_etiqueta_creada=etiqueta_modelo.ingresar_etiquetas(conexionDB,etiqueta_sin_espacios);
+                print(id_etiqueta_creada)
+                conexionDB.conectarse()
+                conexionDB.ejecutar_consulta(consulta,(id_evento_creado,id_etiqueta_creada))
+                conexionDB.aplicar_cambios()
+                conexionDB.cerrar_conexion();
+        except mysql.connector.IntegrityError:
+            print("Registro con fecha Duplicada")
+            return False;  
+        finally:
+            conexionDB.cerrar_conexion()
+        return True
+
+    def editar_eventos_por_etiqueta(self, conexionDB, evento):
+        try:
+            evento_modelo = EventosModelo()
+            etiqueta_modelo = EtiquetasModelo()
+            
+            consulta = """INSERT INTO etiquetas_eventos(id_eventos,id_etiquetas)
+                            VALUES(%s,%s)"""
+            evento_modelo.editar_evento(conexionDB, evento)
+            conjunto_de_id_etiquetas = []
+            etiquetas_de_evento = evento.identificadorEvento.split(",")
+            print(etiquetas_de_evento)
+            for etiqueta in etiquetas_de_evento:
+                etiqueta_sin_espacios = etiqueta.strip()
+                print(etiqueta_sin_espacios)
+                id_etiqueta_creada = etiqueta_modelo.ingresar_etiquetas(
+                    conexionDB, etiqueta_sin_espacios)
+                conjunto_de_id_etiquetas.append(id_etiqueta_creada)
+                if(self.etiqueta_relacionada_a_evento(conexionDB,evento.id,id_etiqueta_creada)):
+                    conexionDB.conectarse()
+                    conexionDB.ejecutar_consulta(
+                        consulta, (evento.id, id_etiqueta_creada))
+                    conexionDB.aplicar_cambios()
+                    conexionDB.cerrar_conexion()
+            conexionDB.conectarse()
+            consulta = """DELETE FROM etiquetas_eventos 
+                        WHERE id_eventos=%s AND id_etiquetas NOT IN (%s)"""
+            marcadores = ','.join(['%s'] * len(conjunto_de_id_etiquetas))
+            valores = tuple(conjunto_de_id_etiquetas)
+            consulta_final = consulta % (evento.id,marcadores)
+            conexionDB.ejecutar_consulta(consulta_final,valores);
+            conexionDB.aplicar_cambios()
+            conexionDB.cerrar_conexion()    
+        except mysql.connector.IntegrityError:
+            print("Registro con fecha Duplicada")
+            return False
+        finally:
+            conexionDB.cerrar_conexion()
+        return True
+
+    def etiqueta_relacionada_a_evento(self,conexionDB,evento_id,etiqueta_id):
+        try:
+            conexionDB.conectarse()
+            consulta = """SELECT COUNT(*) FROM 
+                        etiquetas_eventos 
+                        WHERE id_eventos=%s AND id_etiquetas=%s"""
+            conexionDB.ejecutar_consulta(consulta,(evento_id,etiqueta_id))
+            registros = conexionDB.obtener_registros()
+        except mysql.connector.DatabaseError:
+            print("Ocurrio un error en la base de datos")
+        finally:
+            conexionDB.cerrar_conexion()
+        return registros==0

@@ -22,8 +22,8 @@ class ComponenteEvento(tk.Frame):
         self.minutos =tk.StringVar();
         self.duracion=tk.StringVar(value="1 Hora");
         self.importancia=tk.BooleanVar();
-        self.horaRecordatorio = tk.StringVar()
-        self.minutosRecordatorio = tk.StringVar()
+        """ self.horaRecordatorio = tk.StringVar()
+        self.minutosRecordatorio = tk.StringVar() """
         self.identificadorEvento=tk.StringVar();
         self.contenedorForm=tk.LabelFrame(self,text="Agregar nuevo Evento",font=self.fuenteDelComponente,padx=30,pady=30);
         self.contenedorForm.grid(row=0, column=0,padx=10,pady=10);
@@ -61,36 +61,17 @@ class ComponenteEvento(tk.Frame):
             row=2, column=2, padx=10, pady=10)
         self.checkButtonInput=tk.Checkbutton(self.contenedorForm, variable=self.importancia, font=self.fuenteDelComponente)
         self.checkButtonInput.grid(row=2, column=3)
-        tk.Label(self.contenedorForm, text="Fecha de Recordatorio", font=self.fuenteDelComponente).grid(
-            row=3, column=0,columnspan=2, ipadx=5);
-        tk.Label(self.contenedorForm, text="Hora de Recordatorio", font=self.fuenteDelComponente).grid(
-            row=3, column=2, columnspan=2,ipadx=5);
-        self.fechaRecordatorioInput = DateEntry(self.contenedorForm, locale="es_ES", font=self.fuenteDelComponente)
-        self.fechaRecordatorioInput.grid(row=4, column=0, columnspan=2);
 
-        self.contenedorHoraFechaRecordatorio = tk.Frame(self.contenedorForm)
-        self.contenedorHoraFechaRecordatorio.grid(row=4, column=2, columnspan=2);
-
-        self.horaRecordatorioInput = tk.Spinbox(self.contenedorHoraFechaRecordatorio, textvariable=self.horaRecordatorio,
-                                                font=self.fuenteDelComponente, justify="center", width=5, increment=1, from_=0, to=23)
-        self.horaRecordatorio.set("");
-        self.horaRecordatorioInput.grid(row=0, column=0)
-
-        self.minutosRecordatorioInput = tk.Spinbox(self.contenedorHoraFechaRecordatorio, textvariable=self.minutosRecordatorio,
-                                                   font=self.fuenteDelComponente, justify="center", width=5, increment=1, from_=0, to=60)
-        self.minutosRecordatorio.set("");
-        self.minutosRecordatorioInput.grid(row=0, column=1)
-
-        tk.Label(self.contenedorForm, text="Identificar Evento como", font=self.fuenteDelComponente).grid(row=5, column=0,columnspan=2,pady=10)
+        tk.Label(self.contenedorForm, text="Identificar Evento como", font=self.fuenteDelComponente).grid(row=3, column=0,columnspan=2,pady=10)
         self.identificadoInput=tk.Entry(self.contenedorForm, textvariable=self.identificadorEvento,font=self.fuenteDelComponente, justify="center")
-        self.identificadoInput.grid( row=5, column=2, columnspan=2, sticky="we", pady=10)
-        tk.Label(self.contenedorForm,text="Descripción",font=self.fuenteDelComponente).grid(row=6,column=0,columnspan=4,pady=5);
+        self.identificadoInput.grid( row=4, column=0, columnspan=4, sticky="we", pady=10)
+        tk.Label(self.contenedorForm,text="Descripción",font=self.fuenteDelComponente).grid(row=5,column=0,columnspan=4,pady=5);
         self.descripcion = tk.Text(self.contenedorForm, font=self.fuenteDelComponente,height=5,width=60);
-        self.descripcion.grid(row=7, column=0, columnspan=4,padx=5,pady=5);
+        self.descripcion.grid(row=6, column=0, columnspan=4,padx=5,pady=5);
         self.botonCrearEvento=tk.Button(self.contenedorForm, text="Agregar Evento", command=self.agregarEvento,
                   padx=5, pady=5,font=self.fuenteDelComponente,fg="white",bg=self.colorBotones);
         self.botonCrearEvento.grid(
-            row=8, column=0, columnspan=4, sticky="snew");
+            row=7, column=0, columnspan=4, sticky="snew");
         self.botonEditarEvento = tk.Button(
         self.contenedorForm, text="Editar",fg="white", font=self.fuenteDelComponente, bg=self.colorBotones,
         command=self.modificarEvento);
@@ -99,7 +80,7 @@ class ComponenteEvento(tk.Frame):
     
     def agregarEvento(self):
         if(not self.comprobarEntrysVacios()):
-            if (AdministradorDeFechas.validarHora(self.hora.get(), self.minutos.get()) and AdministradorDeFechas.validarHora(self.horaRecordatorio.get(), self.minutosRecordatorio.get())):
+            if (AdministradorDeFechas.validarHora(self.hora.get(), self.minutos.get())):
                 self.cargarEvento()
                 self.tablaEventos.agregarEventoATabla(self.evento)
             else:
@@ -165,9 +146,9 @@ class ComponenteEvento(tk.Frame):
 
         self.colocarRegistrosCargadosEnCampos(evento);
 
-        self.botonEditarEvento.grid(row=8, column=0, columnspan=2,sticky="we",padx=5);
+        self.botonEditarEvento.grid(row=7, column=0, columnspan=2,sticky="we",padx=5);
         
-        self.botonCancelarEdicion.grid(row=8, column=2, columnspan=2,sticky="we",padx=5);
+        self.botonCancelarEdicion.grid(row=7, column=2, columnspan=2,sticky="we",padx=5);
 
     def reestabecerBotonOriginal(self):
         self.botonEditarEvento.grid_forget();
@@ -186,15 +167,11 @@ class ComponenteEvento(tk.Frame):
         self.evento = Evento(self.titulo.get(),
                              self.fechaInput.get_date(),
                              AdministradorDeFechas.getFechaFormateada(self.hora.get(),self.minutos.get()),
-                             self.duracion.get(),
-                             self.fechaRecordatorioInput.get_date(),
-                             #Aca este el error al llamar al metodo get del Intvar ya que se enceutnra vacio
-                             AdministradorDeFechas.getFechaFormateada(self.horaRecordatorio.get(),
-                                                                      self.minutosRecordatorio.get()),
+                             self.duracion.get(),                             
                              self.identificadorEvento.get(),
                              self.descripcion.get("1.0", 'end-1c'),
                              self.importancia.get())
-        
+        print(f'Fecha: {self.evento.fecha}, Hora: {self.evento.hora},impportancia:{self.evento.importancia}')
 
     def modificarEvento(self):
         self.cargarEvento();

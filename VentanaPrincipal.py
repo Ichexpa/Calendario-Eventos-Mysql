@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk,messagebox
 from ComponenteEvento import ComponenteEvento;
 from TablaDeEventos import TablaDeEventos;
-
+from EventosModelo import EventosModelo
 class VentanaPrincipal(tk.Frame):
     fuenteBotones = ("consolas", 14, "bold");
     def __init__(self,padre,manejadorJSon,conexionDB):
@@ -32,7 +32,9 @@ class VentanaPrincipal(tk.Frame):
         if(not seleccionado):
             messagebox.showerror("Error","No se seleccionó un evento para editar");    
         else:
-            valor = self.tablaDeEventos.tabla.item(seleccionado, "value");  
+            valor = self.tablaDeEventos.tabla.item(seleccionado, "value");
+            #ID
+            print(valor[0])
             indiceDiccionario, evento = self.manejadorJson.encontrarObjeto(valor);
             self.componenteEvento.editarRegistro(evento, indiceDiccionario, seleccionado);
             
@@ -43,10 +45,11 @@ class VentanaPrincipal(tk.Frame):
         else:   
             valor = self.tablaDeEventos.tabla.item(seleccionado, "value");
             print(valor);
-            continuar = messagebox.askyesno(message="¿Desea continuar?\n Evento: " + valor[0], title="Se eliminara un evento");
-            if continuar:                
+            continuar = messagebox.askyesno(message="¿Desea continuar?\n Evento: " + valor[1], title="Se eliminara un evento");
+            if continuar:
+                modeloEvento=EventosModelo()                
                 self.tablaDeEventos.tabla.delete(seleccionado);
-                self.manejadorJson.eliminarObjeto(valor);
+                modeloEvento.eliminar_evento(self.conexionDB,valor[0])
     
 
         
