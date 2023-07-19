@@ -54,7 +54,8 @@ class EventosModelo:
             conexionDB.conectarse()
             consulta = """INSERT INTO eventos(titulo,fecha_hora,duracion,importancia,descripcion)
                              VALUES(%s,%s,%s,%s,%s)"""
-            fechaTipoDateTime = AdministradorDeFechas.cadenaDeFechaADate(evento.fecha, evento.hora)
+            fechaTipoDateTime = AdministradorDeFechas.unirFechaYHoraCadenasEnDatetime(
+                evento.fecha, evento.hora)
             print(fechaTipoDateTime)
             info_evento = (evento.titulo, fechaTipoDateTime, evento.duracion, evento.importancia,evento.descripcion)
             conexionDB.ejecutar_consulta(consulta,info_evento)
@@ -72,7 +73,7 @@ class EventosModelo:
             conexionDB.conectarse()
             consulta = """UPDATE eventos SET titulo=%s,fecha_hora=%s,duracion=%s,importancia=%s,descripcion=%s
                              WHERE id_evento=%s"""
-            fechaTipoDateTime = AdministradorDeFechas.cadenaDeFechaADate(
+            fechaTipoDateTime = AdministradorDeFechas.unirFechaYHoraCadenasEnDatetime(
                 evento.fecha, evento.hora)
             print(fechaTipoDateTime)
             info_evento = (evento.titulo, fechaTipoDateTime,
@@ -83,3 +84,17 @@ class EventosModelo:
             raise mysql.connector.IntegrityError
         finally:
             conexionDB.cerrar_conexion()
+
+    def get_eventos_mensuales(self, conexionDB,mes_inf,mes_sup):
+        try:
+            conexionDB.conectarse()
+            consulta = f"""SELECT id_evento,titulo,fecha_hora,duracion,descripcion,importancia
+                        FROM eventos WHERE fecha_hora BETWEEN 
+                        '{mes_inf}' AND '{mes_sup}'"""
+            conexionDB.ejecutar_consulta(consulta)
+            registros = conexionDB.obtener_registros()
+        except mysql.connector.DatabaseError:
+            print("Ocurrio un error en la base de datos")
+        finally:
+            conexionDB.cerrar_conexion()
+        return registros

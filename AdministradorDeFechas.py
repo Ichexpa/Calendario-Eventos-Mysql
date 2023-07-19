@@ -6,10 +6,8 @@ class AdministradorDeFechas:
     def __init__(self):
         self.actualizarAtributosFecha(7);
 
-    def cadenaDeFechaADate(fecha,hora):
-       fecha_hora=f'{fecha} {hora}'
-       print(fecha_hora)
-       return datetime.strptime(fecha_hora,'%d-%m-%Y %H:%M')
+    def cadenaDeFechaADate(fecha):
+       return datetime.strptime(fecha,'%d-%m-%Y').date()
 
     def actualizarAtributosFecha(self,dias):
         fechaActual = datetime.now().date();
@@ -29,6 +27,7 @@ class AdministradorDeFechas:
     def unirFechaYHoraCadenasEnDatetime(fecha,hora):
 
         fechaYhora=f'{fecha} {hora}';
+        print(fechaYhora)
         fechaYhoraConvertidos=datetime.strptime(fechaYhora,"%d-%m-%Y %H:%M");
         return fechaYhoraConvertidos;
 

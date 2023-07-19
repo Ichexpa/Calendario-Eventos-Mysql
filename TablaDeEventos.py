@@ -13,7 +13,7 @@ class TablaDeEventos(tk.Frame):
     colorBotones = "#62CFA4"
     colorBotonesExploradoresDeFecha = "#086A52";
 
-    def __init__(self,padre,manejadorJson,conexionDB):
+    def __init__(self,padre,conexionDB):
         super().__init__(padre);
         self.contadorSiguienteSemana=7;
         self.padre=padre;
@@ -21,7 +21,6 @@ class TablaDeEventos(tk.Frame):
         self.evento_modelo=EventosModelo();
         self.administradorDeFecha=AdministradorDeFechas();
         self.administradorDeFecha.getMesActual(datetime.now().date())
-        self.accesorAlFicheroJson = manejadorJson;
         self.ingresobuscarEvento=tk.StringVar()
         self.estilo = ttk.Style()
         # Modifico la fuente de las filas
@@ -118,24 +117,26 @@ class TablaDeEventos(tk.Frame):
         VentanaDetalleEvento(self.padre, evento_seleccionado)
 
     def agregarEventoATabla(self,evento):
-        #Se guarda el evento formateado al json que a su vez lo guarda en la lista de la clase
-        carga_exitosa= EventosYEtiquetasModelos().ingresar_eventos_por_etiqueta(self.conexionDB,evento)
+        carga_exitosa,id_evento_creado= EventosYEtiquetasModelos().ingresar_eventos_por_etiqueta(self.conexionDB,evento)
         if (carga_exitosa):
-            print("Se cargo con exito")
-            fechaTipoDate = AdministradorDeFechas.cadenaDeFechaADate(evento.fecha,evento.hora)
+            evento.id=id_evento_creado;
+            fechaTipoDate = AdministradorDeFechas.unirFechaYHoraCadenasEnDatetime(evento.fecha,evento.hora)
             seEncuentraEnLaSemana = self.administradorDeFecha.seEncuentraEnLaSemana(fechaTipoDate.date(),  # Retorna un booleano
                                                                             self.contadorSiguienteSemana)
+            print(f"Se encuentra en la semana {seEncuentraEnLaSemana}")
             seEncuentraEnElMes = AdministradorDeFechas.comprobarSiSeEncuentraEnElMesActual(fechaTipoDate.date(),
                                                                                        self.administradorDeFecha.fechaPrimerDia,
                                                                                        self.administradorDeFecha.fechaUltimoDia)
+            print(f"Se encuentra en el mes {seEncuentraEnElMes}")
             #Ver mas tarde
-            """ #Si esta en mes y se encuentra en los intervalos del mes se agrega a la tabla
+            #Si esta en mes y se encuentra en los intervalos del mes se agrega a la tabla
             if (self.comboOpcionesDeFiltro.get() == "Filtrar por Mes" and seEncuentraEnElMes):
+                print("Entro a mes")
                 self.agregarEventoOrdenado(evento);
             #Si esta en la semana y se encuentra entre los intervalos de la semana se agrega a la tabla
             elif (self.comboOpcionesDeFiltro.get() == "Filtrar por Semana" and seEncuentraEnLaSemana):
-                self.agregarEventoOrdenado(evento); """
-
+                print("Entro a semana")
+                self.agregarEventoOrdenado(evento);
             messagebox.showinfo("Evento agregado", "Evento agregado con exito");
         else:
             messagebox.showerror("Evento existente","Ya existe un evento con la fecha y hora indicada");
@@ -143,15 +144,15 @@ class TablaDeEventos(tk.Frame):
         
     
     def agregarEventoOrdenado(self,evento):
-        tuplaNuevoEvento = (evento.titulo,
+        tuplaNuevoEvento = (evento.id,
+                            evento.titulo,
                             evento.fecha,
                             evento.hora,
                             evento.duracion,
                             evento.descripcion,
                             self.esImportante(evento.importancia))
         self.tabla.insert("", tk.END, values=tuplaNuevoEvento,tags=self.colorFilaImportante(evento.importancia));
-        #Configurarlo mas tarde
-        #self.agregarFechaOrdenada();
+        self.agregarFechaOrdenada();
         
     
     def cargarTabla(self,lista):        
@@ -173,8 +174,8 @@ class TablaDeEventos(tk.Frame):
 
     def cargarRegistrosDelMesEnTabla(self):
         self.eliminarFilas()
-        listaDeEventosDentroDelMes = self.accesorAlFicheroJson.obtenerMes(self.administradorDeFecha.fechaPrimerDia,
-                                                                          self.administradorDeFecha.fechaUltimoDia);
+        listaDeEventosDentroDelMes = EventosModelo().get_eventos_mensuales(self.conexionDB, self.administradorDeFecha.fechaPrimerDia,
+                                                                           self.administradorDeFecha.fechaUltimoDia)
         self.cargarTabla(listaDeEventosDentroDelMes);
             
     def esImportante(self,valor):
@@ -195,7 +196,7 @@ class TablaDeEventos(tk.Frame):
     def agregarFechaOrdenada(self):
         filasDeTabla=self.tabla.get_children();
         filasDeTabla = sorted(filasDeTabla, key=lambda e: AdministradorDeFechas.unirFechaYHoraCadenasEnDatetime(
-            self.tabla.item(e)["values"][1], self.tabla.item(e)["values"][2]))
+            self.tabla.item(e)["values"][2], self.tabla.item(e)["values"][3]))
         
         for index,k in enumerate(filasDeTabla):
             self.tabla.move(k, '', index)
@@ -216,15 +217,16 @@ class TablaDeEventos(tk.Frame):
         self.cargarTablaPorSemana();
 
     def modificarFila(self,evento,indiceFila):
-       self.tabla.item(indiceFila, values=(evento.titulo,
-                                     evento.fecha,
-                                     evento.hora,
-                                     evento.duracion,
-                                     evento.descripcion,
-                                     self.esImportante(evento.importancia)),
-                                    tags=self.colorFilaImportante(evento.importancia))
-       self.agregarFechaOrdenada();
-       messagebox.showinfo("Evento modificado","Evento modificado con éxito");
+        self.tabla.item(indiceFila, values=(evento.id,
+                                            evento.titulo,
+                                            evento.fecha,
+                                            evento.hora,
+                                            evento.duracion,
+                                            evento.descripcion,
+                                            self.esImportante(evento.importancia)),
+                                            tags=self.colorFilaImportante(evento.importancia))
+        self.agregarFechaOrdenada();
+        messagebox.showinfo("Evento modificado","Evento modificado con éxito");
     
     def filtrarPorMes(self):
         self.cargarRegistrosDelMesEnTabla();

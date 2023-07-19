@@ -1,7 +1,5 @@
 import mysql.connector
-from datetime import date, datetime, timedelta, time
 from calendar import monthrange
-from ConexionDB import ConexionDB
 class EtiquetasModelo:
     def __init__(self):
         pass
@@ -32,7 +30,3 @@ class EtiquetasModelo:
         finally:
             conexionDB.cerrar_conexion()
         return id_etiqueta;
-
-""" consulta=EtiquetasModelo()
-conexionDB = ConexionDB()
-print(consulta.ingresar_etiquetas(conexionDB,"Comida")) """

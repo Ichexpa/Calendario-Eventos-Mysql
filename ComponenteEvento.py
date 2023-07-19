@@ -5,29 +5,31 @@ from AdministradorDeFechas import AdministradorDeFechas
 from tkinter import messagebox
 import locale
 from datetime import datetime
+from EventosYEtiquetasModel import EventosYEtiquetasModelos
+from ConexionDB import ConexionDB
 class ComponenteEvento(tk.Frame):
 
     colorDeFondo = "#BFDFB2"
     fuenteDelComponente = "consolas 13 bold"
     colorBotones = "#62CFA4";
 
-    def __init__(self, padre,tabla,manejadorDeLaListaEventos):
+    def __init__(self, padre,tabla,conexionDB):
         super().__init__(padre)
         self.tablaEventos=tabla;
-        self.manejadorDeLaListaEventos = manejadorDeLaListaEventos
+        self.conexionDB = conexionDB
         locale.setlocale(locale.LC_ALL, "es_ES");
 
         self.titulo=tk.StringVar();
         self.hora =tk.StringVar();
         self.minutos =tk.StringVar();
-        self.duracion=tk.StringVar(value="1 Hora");
+        self.duracion=tk.StringVar(value="0");
         self.importancia=tk.BooleanVar();
-        """ self.horaRecordatorio = tk.StringVar()
-        self.minutosRecordatorio = tk.StringVar() """
+        self.id_evento=tk.StringVar()
         self.identificadorEvento=tk.StringVar();
         self.contenedorForm=tk.LabelFrame(self,text="Agregar nuevo Evento",font=self.fuenteDelComponente,padx=30,pady=30);
         self.contenedorForm.grid(row=0, column=0,padx=10,pady=10);
 
+        self.id_input=tk.Entry(self.contenedorForm,textvariable=self.id_evento);
         tk.Label(self.contenedorForm, text="Titulo", font=self.fuenteDelComponente).grid(row=0, column=0)
         self.tituloInput=tk.Entry(self.contenedorForm, textvariable=self.titulo, font=self.fuenteDelComponente,justify="center")
         self.tituloInput.grid(row=0, column=1, columnspan=3, sticky="we")
@@ -96,42 +98,34 @@ class ComponenteEvento(tk.Frame):
 
     def limpiarTabla(self):
         fechaActual = datetime.now().date();
+        self.id_input.delete(0,tk.END);
         self.tituloInput.delete(0, tk.END);
         self.horaInput.delete(0, tk.END);
         self.fechaInput.set_date(fechaActual)
         self.minutosInput.delete(0,tk.END);
         self.duracionInput.delete(0, tk.END);
         self.checkButtonInput.deselect();
-        self.fechaRecordatorioInput.set_date(fechaActual)
-        self.horaRecordatorioInput.delete(0, tk.END);
-        self.minutosRecordatorioInput.delete(0, tk.END);
         self.identificadoInput.delete(0, tk.END);
         self.descripcion.delete("1.0", 'end-1c');
 
     def cargarCampos(self,evento):
-        fechaFormateadaADate = AdministradorDeFechas.cadenaDeFechaADate(evento["fecha"])
-        fechaRecordatorioFormateada = AdministradorDeFechas.cadenaDeFechaADate(evento["fechaRecordatorio"])
-        horaEvento,minutoEvento=AdministradorDeFechas.horaYMinutoSeparados(evento["hora"]);
-        horaRecordatorio,minutoRecordatorio=AdministradorDeFechas.horaYMinutoSeparados(evento["horaRecordatorio"]);
-
-        self.tituloInput.insert(0, evento["titulo"])
-        self.fechaInput.set_date(fechaFormateadaADate)        
-        self.horaInput.insert(0, horaEvento)      
+        horaEvento, minutoEvento = AdministradorDeFechas.horaYMinutoSeparados(str(evento[2].time())[:5])
+        
+        self.id_input.insert(0,evento[0])
+        self.tituloInput.insert(0, evento[1])
+        self.fechaInput.set_date(evento[2].date())
+        self.horaInput.insert(0,horaEvento )      
         self.minutosInput.insert(0,minutoEvento);        
-        self.duracionInput.insert(0, evento["duracion"])
+        self.duracionInput.insert(0, evento[3])
 
-        if (evento["importancia"]):
+        if (evento[5]==1):
             self.checkButtonInput.select()
         else:
-            self.checkButtonInput.deselect()                    
-        self.fechaRecordatorioInput.set_date(fechaRecordatorioFormateada)        
-        self.horaRecordatorioInput.insert(0, horaRecordatorio)        
-        self.minutosRecordatorioInput.insert(0, minutoRecordatorio)        
-        self.identificadoInput.insert(0, evento["identificadorEvento"])        
-        self.descripcion.insert(tk.INSERT, evento["descripcion"])
+            self.checkButtonInput.deselect()          
+        self.identificadoInput.insert(0, evento[6])        
+        self.descripcion.insert(tk.INSERT, evento[4])
 
-    def editarRegistro(self,evento,indice,indiceFilaTabla):
-        #print(evento);
+    def editarRegistro(self,evento,indiceFilaTabla):
         #Declaro los botones
         self.contenedorForm.configure(text="Modificar Evento")
         self.botonCrearEvento.grid_forget()
@@ -141,7 +135,6 @@ class ComponenteEvento(tk.Frame):
         self.botonEditarEvento.grid_forget();
         
         #Se guardan los indices para luego pasarlos a la clase de la tabla
-        self.indiceElementoAEditar=indice;
         self.indiceFilaTabla=indiceFilaTabla;       
 
         self.colocarRegistrosCargadosEnCampos(evento);
@@ -162,7 +155,6 @@ class ComponenteEvento(tk.Frame):
             if(not entry.get()):
                return True;    
 
-
     def cargarEvento(self):
         self.evento = Evento(self.titulo.get(),
                              self.fechaInput.get_date(),
@@ -170,24 +162,16 @@ class ComponenteEvento(tk.Frame):
                              self.duracion.get(),                             
                              self.identificadorEvento.get(),
                              self.descripcion.get("1.0", 'end-1c'),
-                             self.importancia.get())
-        print(f'Fecha: {self.evento.fecha}, Hora: {self.evento.hora},impportancia:{self.evento.importancia}')
+                             self.importancia.get(),
+                             self.id_evento.get()
+                             )
+        print(f'ID: {self.evento.id} Fecha: {self.evento.fecha}, Hora: {self.evento.hora},impportancia:{self.evento.importancia}')
 
     def modificarEvento(self):
-        self.cargarEvento();
-        tuplaABuscar=("",self.evento.fecha,self.evento.hora);
-        resBusqueda=self.manejadorDeLaListaEventos.encontrarObjeto(tuplaABuscar);   
-        if (resBusqueda!=False):
-            #obtengo el indice del objeto para comprobar si el que quiero editar
-            indice=resBusqueda[0]
-            esElMismoEvento= indice==self.indiceElementoAEditar;
-                
-        if(resBusqueda==False or esElMismoEvento):
-            self.manejadorDeLaListaEventos.contenedorObjetos[self.indiceElementoAEditar] = self.evento.getEventoComoDict()
-            self.manejadorDeLaListaEventos.escribirEnFichero()
-            self.tablaEventos.modificarFila(self.evento, self.indiceFilaTabla)
-            
-            
+        self.cargarEvento()        
+        resultado_modificacion = EventosYEtiquetasModelos().editar_eventos_por_etiqueta(self.conexionDB, self.evento)
+        if (resultado_modificacion != False):
+            self.tablaEventos.modificarFila(self.evento, self.indiceFilaTabla)      
         else:
             messagebox.showerror("Hora ya registrada",
                                  f"El registro del evento {self.evento.fecha} {self.evento.hora} ya se encuentra en uso")

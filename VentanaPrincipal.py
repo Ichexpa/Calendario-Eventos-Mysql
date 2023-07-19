@@ -3,16 +3,16 @@ from tkinter import ttk,messagebox
 from ComponenteEvento import ComponenteEvento;
 from TablaDeEventos import TablaDeEventos;
 from EventosModelo import EventosModelo
+from EventosYEtiquetasModel import EventosYEtiquetasModelos
 class VentanaPrincipal(tk.Frame):
     fuenteBotones = ("consolas", 14, "bold");
-    def __init__(self,padre,manejadorJSon,conexionDB):
+    def __init__(self,padre,conexionDB):
         super().__init__(padre);
         self.padre=padre;
-        self.manejadorJson=manejadorJSon;
         self.conexionDB=conexionDB
-        self.tablaDeEventos=TablaDeEventos(self,self.manejadorJson,self.conexionDB);
+        self.tablaDeEventos=TablaDeEventos(self,self.conexionDB);
         self.tablaDeEventos.grid(row=1,column=1);
-        self.componenteEvento = ComponenteEvento(self, self.tablaDeEventos,self.manejadorJson);
+        self.componenteEvento = ComponenteEvento(self, self.tablaDeEventos,self.conexionDB);
         self.componenteEvento.grid(row=1, column=0);
         self.frameTitulo=tk.Frame(self);
         self.frameTitulo.grid(row=0, column=0, columnspan=2);
@@ -33,10 +33,10 @@ class VentanaPrincipal(tk.Frame):
             messagebox.showerror("Error","No se seleccionó un evento para editar");    
         else:
             valor = self.tablaDeEventos.tabla.item(seleccionado, "value");
-            #ID
             print(valor[0])
-            indiceDiccionario, evento = self.manejadorJson.encontrarObjeto(valor);
-            self.componenteEvento.editarRegistro(evento, indiceDiccionario, seleccionado);
+            evento_y_etiquetas = EventosYEtiquetasModelos().get_evento_y_etiqueta(self.conexionDB,valor[0])
+            print(evento_y_etiquetas)
+            self.componenteEvento.editarRegistro(evento_y_etiquetas, seleccionado);
             
     def eliminarEventoSeleccionado(self):
         seleccionado = self.tablaDeEventos.tabla.focus();

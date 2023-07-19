@@ -56,10 +56,13 @@ class EventosYEtiquetasModelos:
                 conexionDB.cerrar_conexion();
         except mysql.connector.IntegrityError:
             print("Registro con fecha Duplicada")
-            return False;  
+            return False; 
+        except mysql.connector.Error as e:
+            print(f"Codigo de error numero {e.errno}")
+            return False
         finally:
             conexionDB.cerrar_conexion()
-        return True
+        return True,id_evento_creado
 
     def editar_eventos_por_etiqueta(self, conexionDB, evento):
         try:
@@ -79,6 +82,7 @@ class EventosYEtiquetasModelos:
                     conexionDB, etiqueta_sin_espacios)
                 conjunto_de_id_etiquetas.append(id_etiqueta_creada)
                 if(self.etiqueta_relacionada_a_evento(conexionDB,evento.id,id_etiqueta_creada)):
+                    
                     conexionDB.conectarse()
                     conexionDB.ejecutar_consulta(
                         consulta, (evento.id, id_etiqueta_creada))
@@ -89,12 +93,16 @@ class EventosYEtiquetasModelos:
                         WHERE id_eventos=%s AND id_etiquetas NOT IN (%s)"""
             marcadores = ','.join(['%s'] * len(conjunto_de_id_etiquetas))
             valores = tuple(conjunto_de_id_etiquetas)
+            print(valores);
             consulta_final = consulta % (evento.id,marcadores)
             conexionDB.ejecutar_consulta(consulta_final,valores);
             conexionDB.aplicar_cambios()
             conexionDB.cerrar_conexion()    
         except mysql.connector.IntegrityError:
             print("Registro con fecha Duplicada")
+            return False
+        except mysql.connector.Error as e:
+            print(f"Codigo de error numero {e.errno}")
             return False
         finally:
             conexionDB.cerrar_conexion()
@@ -107,7 +115,8 @@ class EventosYEtiquetasModelos:
                         etiquetas_eventos 
                         WHERE id_eventos=%s AND id_etiquetas=%s"""
             conexionDB.ejecutar_consulta(consulta,(evento_id,etiqueta_id))
-            registros = conexionDB.obtener_registros()
+            registros = conexionDB.obtener_registro()[0]
+            print(registros);
         except mysql.connector.DatabaseError:
             print("Ocurrio un error en la base de datos")
         finally:
